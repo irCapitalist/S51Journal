@@ -20,22 +20,55 @@ function extractTag(content: string, tag: string): string {
   return match ? match[1] : "";
 }
 
-async function processFeed(feed: any, env: any) {
-  const response = await fetch(feed.url);
-  const xml = await response.text();
+function extractCDATA(content: string, tag: string): string {
+  const regex = new RegExp(
+    `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
+    "i"
+  );
+  const match = content.match(regex);
+  return match ? match[1] : "";
+}
 
-  const items = xml.match(/<item>([\s\S]*?)<\/item>/g);
+function cleanContent(itemXml: string): string {
+  const raw =
+    extractCDATA(itemXml, "content:encoded") ||
+    extractCDATA(itemXml, "description") ||
+    "";
+
+  let text = raw
+    .replace(/<[^>]*>/g, "")
+    .replace(/\s+/g, " ")
+    .trim();
+
+  if (!text || text === "..." || text.length < 30) {
+    return "";
+  }
+
+  return text.slice(0, 500);
+}
+
+async function processFeed(feed: any, env: any) {
+  const response = await fetch(feed.url, {
+    headers: { "User-Agent": "Mozilla/5.0" }
+  });
+
+  const xml = await response.text();
+  const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
   if (!items) return;
 
-  // فقط 2 خبر اول هر منبع (برای جلوگیری از overload)
   for (const item of items.slice(0, 2)) {
-    const title = stripHtml(extractTag(item, "title"));
-    const link = extractTag(item, "link");
-    const description = stripHtml(extractTag(item, "description")).slice(0, 400);
+    const title = stripHtml(extractCDATA(item, "title"));
+    const link = extractCDATA(item, "link");
+    const summary = cleanContent(item);
 
-    const message =
-      `📰 <b>${title}</b>\n\n` +
-      `${description}...\n\n` +
+    let message =
+      `📰 <b>${title}</b>\n\n`;
+
+    if (summary) {
+      message += `${summary}\n\n`;
+    }
+
+    message +=
       `🔗 <a href="${link}">Read full article</a>\n\n` +
       `Source: ${feed.name}`;
 

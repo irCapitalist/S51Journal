@@ -36,6 +36,22 @@ function extractCDATA(content: string, tag: string): string {
   return match ? match[1] : "";
 }
 
+function extractLink(item: string): string {
+  // 1. standard <link>value</link>
+  let link = extractCDATA(item, "link");
+  if (link) return link;
+
+  // 2. <guid> fallback
+  link = extractCDATA(item, "guid");
+  if (link && link.startsWith("http")) return link;
+
+  // 3. <atom:link href="...">
+  const atomMatch = item.match(/<atom:link[^>]+href="([^"]+)"/i);
+  if (atomMatch) return atomMatch[1];
+
+  return ""; // اگر همه روش‌ها نبود
+}
+
 // -------------------- KV Round-Robin --------------------
 
 async function getNextFeed(env: any) {
@@ -77,7 +93,7 @@ async function processFeed(feed: any, env: any) {
 
     for (const item of items.slice(0, 2)) {
       const title = decodeHtmlEntities(stripHtml(extractCDATA(item, "title")));
-      const link = extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
+      const link = extractLink(item) || feed.url;//extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
       const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
       const summary = decodeHtmlEntities(stripHtml(rawContent)).slice(0, 500);
 

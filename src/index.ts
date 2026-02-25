@@ -1,7 +1,7 @@
+// src/index.ts
+
 const RSS_FEEDS = [
-  { name: "Guardian", 
-	url: "https://www.theguardian.com/world/rss" 
-	},
+  { name: "Guardian", url: "https://www.theguardian.com/world/rss" },
   { name: "NYT", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml" },
   { name: "CNN", url: "http://rss.cnn.com/rss/edition.rss" },
   { name: "BBC", url: "http://feeds.bbci.co.uk/news/rss.xml" },
@@ -11,15 +11,12 @@ const RSS_FEEDS = [
   { name: "DailyMail", url: "https://www.dailymail.co.uk/articles.rss" }
 ];
 
+// Helper: remove HTML tags
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
+  return html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
 }
 
-function extractTag(content: string, tag: string): string {
-  const match = content.match(new RegExp(`<${tag}>([\\s\\S]*?)<\\/${tag}>`));
-  return match ? match[1] : "";
-}
-
+// Helper: extract CDATA or tag content
 function extractCDATA(content: string, tag: string): string {
   const regex = new RegExp(
     `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
@@ -29,68 +26,78 @@ function extractCDATA(content: string, tag: string): string {
   return match ? match[1] : "";
 }
 
-function cleanContent(itemXml: string): string {
-  const raw =
-    extractCDATA(itemXml, "content:encoded") ||
-    extractCDATA(itemXml, "description") ||
-    "";
+// KV-based round-robin: get next feed
+async function getNextFeed(env: any) {
+  const total = RSS_FEEDS.length;
+  let indexStr = await env.FEED_STATE.get("index");
+  let index = indexStr ? parseInt(indexStr) : 0;
 
-  let text = raw
-    .replace(/<[^>]*>/g, "")
-    .replace(/\s+/g, " ")
-    .trim();
+  const feed = RSS_FEEDS[index];
+  const next = (index + 1) % total;
+  await env.FEED_STATE.put("index", next.toString());
 
-  if (!text || text === "..." || text.length < 30) {
-    return "";
-  }
-
-  return text.slice(0, 500);
+  return feed;
 }
 
+// KV-based deduplication: check if link sent
+async function alreadySent(env: any, link: string) {
+  const keyBuf = new TextEncoder().encode(link);
+  const hashBuf = await crypto.subtle.digest("SHA-1", keyBuf);
+  const hash = Array.from(new Uint8Array(hashBuf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  const exists = await env.SENT_HASHES.get(hash);
+  if (exists) return true;
+
+  await env.SENT_HASHES.put(hash, "1", { expirationTtl: 7 * 24 * 60 * 60 }); // 7 روز
+  return false;
+}
+
+// Process one feed
 async function processFeed(feed: any, env: any) {
-  const response = await fetch(feed.url, {
-    headers: { "User-Agent": "Mozilla/5.0" }
-  });
+  try {
+    const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
+    const xml = await response.text();
+    const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
+    if (!items) return;
 
-  const xml = await response.text();
-  const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
-  if (!items) return;
+    for (const item of items.slice(0, 2)) {
+      const title = stripHtml(extractCDATA(item, "title"));
+      const link = extractCDATA(item, "link");
+      const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
+      const summary = stripHtml(rawContent).slice(0, 500);
 
-  for (const item of items.slice(0, 2)) {
-    const title = stripHtml(extractCDATA(item, "title"));
-    const link = extractCDATA(item, "link");
-    const summary = cleanContent(item);
+      if (!title || !link) continue;
+      if (await alreadySent(env, link)) continue; // skip duplicates
 
-    let message =
-      `📰 <b>${title}</b>\n\n`;
+      const message =
+        `📰 <b>${title}</b>\n\n` +
+        (summary ? `${summary}\n\n` : "") +
+        `🔗 <a href="${link}">Read full article</a>\n\n` +
+        `Source: ${feed.name}`;
 
-    if (summary) {
-      message += `${summary}\n\n`;
+      await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: env.CHAT_ID,
+          message_thread_id: Number(env.THREAD_ID),
+          text: message,
+          parse_mode: "HTML",
+          disable_web_page_preview: false
+        })
+      });
     }
-
-    message +=
-      `🔗 <a href="${link}">Read full article</a>\n\n` +
-      `Source: ${feed.name}`;
-
-    await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        chat_id: env.CHAT_ID,
-        message_thread_id: Number(env.THREAD_ID),
-        text: message,
-        parse_mode: "HTML",
-        disable_web_page_preview: false
-      })
-    });
+  } catch (e) {
+    console.error(`Error processing feed ${feed.name}:`, e);
   }
 }
 
-
+// Worker scheduled entry point
 export default {
   async scheduled(event: any, env: any) {
-    for (const feed of RSS_FEEDS) {
-      await processFeed(feed, env);
-    }
+    const feed = await getNextFeed(env);
+    await processFeed(feed, env);
   }
 };

@@ -1,6 +1,16 @@
+
 name = "s51journal"
 main = "src/index.ts"
-compatibility_date = "2024-01-01"
+compatibility_date = "2026-02-25"
 
-[triggers]
-crons = ["*/1 * * * *"]
+type = "javascript"
+
+# KV namespaces
+kv_namespaces = [
+  { binding = "FEED_STATE", id = "" },
+  { binding = "SENT_HASHES", id = "" }
+]
+
+# GitHub integration (اختیاری)
+[triggers] 
+cron = "* * * * *"  # هر 1 دقیقه

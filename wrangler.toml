@@ -3,6 +3,6 @@ main = "src/index.ts"
 compatibility_date = "2026-02-25"
 
 kv_namespaces = [
-  { binding = "FEED_STATE", id = "feed_state_id" },
-  { binding = "SENT_HASHES", id = "sent_hashes_id" }
+  { binding = "FEED_STATE", id = "4f2587e14278452a844bc121db9334ea" },
+  { binding = "SENT_HASHES", id = "8213cec034014be2ac33aa24f08c9dcf" }
 ]

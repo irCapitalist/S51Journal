@@ -15,10 +15,11 @@ Key Features :
 	> Topic-specific message posting (message_thread_id)
 	> Architecture Overview
 
-
+```
 S51Journal/
 	│
 	├── package.json		# فقط نوع پروژه TypeScript/Module را مشخص می‌کند
 	├── wrangler.toml		# مشخصات Worker و Cron trigger
 	└── src/
 		└── index.ts		# کد اصلی برای fetch RSS و ارسال به Telegram
+```

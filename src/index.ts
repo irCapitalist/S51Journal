@@ -86,6 +86,7 @@ async function processFeed(feed: any, env: any) {
   }
 }
 
+
 export default {
   async scheduled(event: any, env: any) {
     for (const feed of RSS_FEEDS) {

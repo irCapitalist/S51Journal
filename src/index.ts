@@ -1,5 +1,7 @@
 const RSS_FEEDS = [
-  { name: "Guardian", url: "https://www.theguardian.com/world/rss" },
+  { name: "Guardian", 
+	url: "https://www.theguardian.com/world/rss" 
+	},
   { name: "NYT", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml" },
   { name: "CNN", url: "http://rss.cnn.com/rss/edition.rss" },
   { name: "BBC", url: "http://feeds.bbci.co.uk/news/rss.xml" },

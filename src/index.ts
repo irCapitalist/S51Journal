@@ -27,16 +27,25 @@ function decodeHtmlEntities(text: string): string {
     .replace(/&#39;/g, "'");
 }
 
-function extractCDATA(content: string, tag: string): string {
+/*function extractCDATA(content: string, tag: string): string {
   const regex = new RegExp(
     `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
     "i"
   );
   const match = content.match(regex);
   return match ? match[1] : "";
+}*/
+
+function extractCDATA(content: string, tag: string): string {
+  const regex = new RegExp(
+    `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
+    "i"
+  );
+  const match = content.match(regex);
+  return match ? match[1].trim() : "";
 }
 
-function extractLink(item: string): string {
+function extractLink(item: string, feedUrl: string): string {
   // 1. standard <link>value</link>
   let link = extractCDATA(item, "link");
   if (link) return link;
@@ -49,7 +58,8 @@ function extractLink(item: string): string {
   const atomMatch = item.match(/<atom:link[^>]+href="([^"]+)"/i);
   if (atomMatch) return atomMatch[1];
 
-  return ""; // اگر همه روش‌ها نبود
+  // 4. fallback به homepage سایت
+  return feedUrl;
 }
 
 // -------------------- KV Round-Robin --------------------
@@ -93,7 +103,7 @@ async function processFeed(feed: any, env: any) {
 
     for (const item of items.slice(0, 2)) {
       const title = decodeHtmlEntities(stripHtml(extractCDATA(item, "title")));
-      const link = extractLink(item) || feed.url;//extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
+      const link = extractCDATA(item, "link") || extractCDATA(item, "guid"); //extractLink(item) || feed.url;//extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
       const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
       const summary = decodeHtmlEntities(stripHtml(rawContent)).slice(0, 500);
 

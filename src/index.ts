@@ -11,12 +11,22 @@ const RSS_FEEDS = [
   { name: "DailyMail", url: "https://www.dailymail.co.uk/articles.rss" }
 ];
 
-// Helper: remove HTML tags
+// -------------------- Helpers --------------------
+
 function stripHtml(html: string): string {
-  return html.replace(/<[^>]*>/g, "").replace(/\s+/g, " ").trim();
+  return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
 }
 
-// Helper: extract CDATA or tag content
+function decodeHtmlEntities(text: string): string {
+  return text
+    .replace(/&apos;/g, "'")
+    .replace(/&quot;/g, '"')
+    .replace(/&amp;/g, "&")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&#39;/g, "'");
+}
+
 function extractCDATA(content: string, tag: string): string {
   const regex = new RegExp(
     `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
@@ -26,7 +36,8 @@ function extractCDATA(content: string, tag: string): string {
   return match ? match[1] : "";
 }
 
-// KV-based round-robin: get next feed
+// -------------------- KV Round-Robin --------------------
+
 async function getNextFeed(env: any) {
   const total = RSS_FEEDS.length;
   let indexStr = await env.FEED_STATE.get("index");
@@ -39,7 +50,8 @@ async function getNextFeed(env: any) {
   return feed;
 }
 
-// KV-based deduplication: check if link sent
+// -------------------- KV Dedup --------------------
+
 async function alreadySent(env: any, link: string) {
   const keyBuf = new TextEncoder().encode(link);
   const hashBuf = await crypto.subtle.digest("SHA-1", keyBuf);
@@ -54,7 +66,8 @@ async function alreadySent(env: any, link: string) {
   return false;
 }
 
-// Process one feed
+// -------------------- Process Feed --------------------
+
 async function processFeed(feed: any, env: any) {
   try {
     const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -63,13 +76,13 @@ async function processFeed(feed: any, env: any) {
     if (!items) return;
 
     for (const item of items.slice(0, 2)) {
-      const title = stripHtml(extractCDATA(item, "title"));
-      const link = extractCDATA(item, "link");
+      const title = decodeHtmlEntities(stripHtml(extractCDATA(item, "title")));
+      const link = extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
       const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
-      const summary = stripHtml(rawContent).slice(0, 500);
+      const summary = decodeHtmlEntities(stripHtml(rawContent)).slice(0, 500);
 
       if (!title || !link) continue;
-      if (await alreadySent(env, link)) continue; // skip duplicates
+      if (await alreadySent(env, link)) continue;
 
       const message =
         `📰 <b>${title}</b>\n\n` +
@@ -94,7 +107,8 @@ async function processFeed(feed: any, env: any) {
   }
 }
 
-// Worker scheduled entry point
+// -------------------- Scheduled Worker --------------------
+
 export default {
   async scheduled(event: any, env: any) {
     const feed = await getNextFeed(env);

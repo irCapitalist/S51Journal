@@ -129,7 +129,7 @@ async function processFeed(feed: any, env: any) {
 
         for (const item of items.slice(0, 2)) {
 
-		    const message = item
+		    const message = `${item}`;
 
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",
@@ -145,6 +145,19 @@ async function processFeed(feed: any, env: any) {
         }
     } catch (e) {
         console.error(`Error processing feed ${feed.name}:`, e);
+		
+		await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				chat_id: env.CHAT_ID,
+				message_thread_id: Number(env.THREAD_ID),
+				text: `Error processing feed ${feed.name}: ${e} `,
+				parse_mode: "HTML",
+				disable_web_page_preview: false
+			})
+
+		});
     }
 }
 

@@ -156,35 +156,22 @@ function extractTag(item: string, tag: string): string {
     return match ? match[1].trim() : "";
 }
 
-function cleanText(input: string, tag?: string): string {
+function escapeHtml(text: string): string {
+    return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+}
+
+function cleanText(input: string): string {
     if (!input) return "";
-	
-	/*
-	 * cleanText: تابع یکپارچه برای آماده‌سازی متن RSS قبل از ارسال
-	 * ترتیب درست اعمال Regex:
-	 * 1. تبدیل لینک <a> به Markdown
-	 * 2. استخراج محتوا از CDATA
-	 * 3. decode موجودیت‌های HTML
-	 * 4. حذف بقیه تگ‌های HTML
-	 * 5. فشرده‌سازی فاصله‌ها و trim
-	 */
-	 
+
     let text = input;
 
-    // 1. تبدیل لینک‌های <a href="...">...</a> به Markdown تلگرام
-    text = text.replace(/<a href="([^"]+)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+    // استخراج CDATA
+    text = text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1");
 
-    // 2. استخراج محتوا از CDATA اگر tag مشخص شده باشد
-    if (tag) {
-        const regex = new RegExp(
-            `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
-            "i"
-        );
-        const match = text.match(regex);
-        if (match) text = match[1];
-    }
-
-    // 3. decode موجودیت‌های HTML
+    // decode entity ها
     text = text
         .replace(/&apos;/g, "'")
         .replace(/&quot;/g, '"')
@@ -193,10 +180,10 @@ function cleanText(input: string, tag?: string): string {
         .replace(/&gt;/g, ">")
         .replace(/&#39;/g, "'");
 
-    // 4. حذف تگ‌های HTML باقیمانده
+    // حذف همه تگ‌های HTML (از جمله <a>)
     text = text.replace(/<[^>]+>/g, "");
 
-    // 5. حذف فاصله‌های اضافی و trim
+    // فشرده سازی فاصله
     text = text.replace(/\s+/g, " ").trim();
 
     return text;
@@ -233,23 +220,41 @@ async function processFeed(feed: any, env: any) {
             // ترجمه عنوان
             const translatedTitle = title//await translateToFa(title);
 
-      const message =
-        `📰 <b>${title}</b>\n\n` +
-        (summary ? `${summary}\n\n` : "") +
-        `🔗 <a href="${link}">Read full article</a>\n\n` +
-        `Source: ${feed.name}`;
+			const message =
+				`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
+				`🌍 <i>${escapeHtml(title)}</i>\n\n` +
+				(summary ? `${escapeHtml(summary)}\n\n` : "") +
+				`🔗 <a href="${link}">Read full article</a>\n\n` +
+				`Source: <b>${escapeHtml(feed.name)}</b>\n` +
+				`Political: ${escapeHtml(feed.political)}\n` +
+				`Economic: ${escapeHtml(feed.economic)}`;
+				
+			const res = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					chat_id: env.CHAT_ID,
+					message_thread_id: Number(env.THREAD_ID),
+					text: message,
+					parse_mode: "HTML",
+					disable_web_page_preview: false
+				})
+			});
 
-            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    chat_id: env.CHAT_ID,
-                    message_thread_id: Number(env.THREAD_ID),
-                    text: message,
-                    parse_mode: "HTML",
-                    disable_web_page_preview: false
-                })
-            });
+			if (!res.ok) {
+				console.error("Telegram error:", await res.text());
+				await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					chat_id: env.CHAT_ID,
+					message_thread_id: Number(env.THREAD_ID),
+					text: "Telegram error:"+await res.text(),
+					parse_mode: "HTML",
+					disable_web_page_preview: false
+				})
+			});
+			}
         }
     } catch (e) {
         console.error(`Error processing feed ${feed.name}:`, e);

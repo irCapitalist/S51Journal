@@ -243,17 +243,7 @@ async function processFeed(feed: any, env: any) {
 
 			if (!res.ok) {
 				console.error("Telegram error:", await res.text());
-				await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					chat_id: env.CHAT_ID,
-					message_thread_id: Number(env.THREAD_ID),
-					text: "Telegram error:"+await res.text(),
-					parse_mode: "HTML",
-					disable_web_page_preview: false
-				})
-			});
+				
 			}
         }
     } catch (e) {

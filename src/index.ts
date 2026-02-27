@@ -113,6 +113,10 @@ function extractLink(item: string, feedUrl: string): string {
 	return feedUrl;
 }
 
+function convertToTelegramFormat(content: string): string {
+    return content.replace(/<a href="([^"]+)"[^>]*>(.*?)<\/a>/g, '[$2]($1)');
+}
+
 // -------------------- KV Round-Robin --------------------
 
 async function getNextFeed(env: any) {
@@ -183,7 +187,10 @@ async function processFeed(feed: any, env: any) {
 			const title = decodeHtmlEntities(stripHtml(extractCDATA(item, "title")));
 			const link = extractCDATA(item, "link") || extractCDATA(item, "guid");
 			const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
-			const summary = decodeHtmlEntities(stripHtml(rawContent)).slice(0, 500);
+
+			const strippedContent = stripHtml(rawContent);
+			const telegramFormattedContent = convertToTelegramFormat(strippedContent);
+			const summary = telegramFormattedContent.slice(0, 600);
 
 			if (!title || !link) continue;
 			if (await alreadySent(env, link)) continue;
@@ -198,9 +205,7 @@ async function processFeed(feed: any, env: any) {
 
 			  `🌍 <i>${escapeHtml(title)}</i>\n\n` +
 
-			  (summary
-				? `${escapeHtml(summary)}\n\n`
-				: "") +
+			  (summary ? `${escapeHtml(summary)}\n\n`: "") +
 
 			  `🔗 <a href="${link}">Read full article</a>\n\n` +
 

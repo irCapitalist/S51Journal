@@ -127,10 +127,10 @@ async function processFeed(feed: any, env: any) {
         const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
         if (!items) return;
 
-        for (const item of items.slice(0, 2)) {
+        for (const item of items.slice(0, 10)) {
 
 		    const message = `${item}`;
-
+			
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

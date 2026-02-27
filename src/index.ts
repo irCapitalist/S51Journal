@@ -84,7 +84,7 @@ async function processFeed(feed: any, env: any) {
 		body: JSON.stringify({
 			chat_id: env.CHAT_ID,
 			message_thread_id: Number(env.THREAD_ID),
-			text: `offfff`,
+			text: "999",
 			parse_mode: "HTML",
 			disable_web_page_preview: false
 		})

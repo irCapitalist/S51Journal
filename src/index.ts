@@ -119,18 +119,33 @@ async function translateToFa(text: string): Promise<string> {
 
 // -- Process Feed 
 
-function extractLink(item: string, feedUrl: string): string {
-    // اول <link> و <guid>
-    let link = extractTag(item, "link") || extractTag(item, "guid");
-    if (link && link.startsWith("http")) return link;
-
-    // سپس <atom:link href="...">
-    const atomMatch = item.match(/<atom:link[^>]+href="([^"]+)"/i);
-    if (atomMatch) return atomMatch[1];
-
-    // fallback به feed.url
-    return feedUrl;
+function extractCDATA(content: string, tag: string): string {
+  const regex = new RegExp(
+    `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
+    "i"
+  );
+  const match = content.match(regex);
+  return match ? match[1].trim() : "";
 }
+
+function extractLink(item: string, feedUrl: string): string {
+	
+  // 1. standard <link>value</link>
+  let link = extractCDATA(item, "link");
+  if (link) return link;
+
+  // 2. <guid> fallback
+  link = extractCDATA(item, "guid");
+  if (link && link.startsWith("http")) return link;
+
+  // 3. <atom:link href="...">
+  const atomMatch = item.match(/<atom:link[^>]+href="([^"]+)"/i);
+  if (atomMatch) return atomMatch[1];
+
+  // 4. fallback به homepage سایت
+  return feedUrl;
+}
+
 
 function extractTag(item: string, tag: string): string {
     const regex = new RegExp(
@@ -198,7 +213,7 @@ async function processFeed(feed: any, env: any) {
         for (const item of items.slice(0, 2)) {
 
             // لینک با fallback کامل
-            const link = extractLink(item, feed.url);
+            const link = extractLink(item) || feed.url;//extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
             if (!link) continue;
 
             // محتوای اصلی و خلاصه

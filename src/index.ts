@@ -176,42 +176,43 @@ async function translateToFa(text: string): Promise<string> {
 
 // -------------------- Process Feed --------------------
 
+async function formatToTelegramText(item: string, feed: any): Promise<string> {
+    const title = decodeHtmlEntities(stripHtml(extractCDATA(item, "title")));
+    const link = extractCDATA(item, "link") || extractCDATA(item, "guid");
+    const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
+
+    // حذف تگ‌های HTML و تبدیل آن به فرمت تلگرام
+    const strippedContent = stripHtml(rawContent);
+    const telegramFormattedContent = convertToTelegramFormat(strippedContent);
+    const summary = telegramFormattedContent.slice(0, 600); // محدود کردن به 600 کاراکتر
+
+    if (!title || !link) return "";
+
+    // ساخت پیام نهایی
+    const message =
+        `📰 <b>${escapeHtml(title)}</b>\n\n` +
+        `🌍 <i>${escapeHtml(telegramFormattedContent)}</i>\n\n` +
+        (summary ? `${escapeHtml(summary)}\n\n` : "") +
+        `🔗 <a href="${link}">Read full article</a>\n\n` +
+        `Source: ${escapeHtml(feed.name)}\n\n` +
+        `Political: ${escapeHtml(feed.political)}\n\n` +
+        `Economic: ${escapeHtml(feed.economic)}`;
+
+    return message;
+}
+
 async function processFeed(feed: any, env: any) {
 	try {
 		const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
 		const xml = await response.text();
 		const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
 		if (!items) return;
-
+		
 		for (const item of items.slice(0, 2)) {
-			const title = decodeHtmlEntities(stripHtml(extractCDATA(item, "title")));
-			const link = extractCDATA(item, "link") || extractCDATA(item, "guid");
-			const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
+			const message = await formatToTelegramText(item, feed);
+			if (!message) continue;
 
-			const strippedContent = stripHtml(rawContent);
-			const telegramFormattedContent = convertToTelegramFormat(strippedContent);
-			const summary = telegramFormattedContent.slice(0, 600);
-
-			if (!title || !link) continue;
 			if (await alreadySent(env, link)) continue;
-			
-			const translatedTitle = await translateToFa(title);
-			/*const translatedSummary = summary
-				? await translateToFa(summary)
-				: "";*/
-	
-			const message =
-			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
-
-			  `🌍 <i>${escapeHtml(title)}</i>\n\n` +
-
-			  (summary ? `${escapeHtml(summary)}\n\n`: "") +
-
-			  `🔗 <a href="${link}">Read full article</a>\n\n` +
-
-			  `Source: ${escapeHtml(feed.name)}\n\n` +
-			  `Political: ${escapeHtml(feed.political)}\n\n` +
-			  `Economic: ${escapeHtml(feed.economic)}`;
 
 			await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
 				method: "POST",
@@ -225,6 +226,7 @@ async function processFeed(feed: any, env: any) {
 				})
 			});
 		}
+
 	} catch (e) {
 		console.error(`Error processing feed ${feed.name}:`, e);
 	}

@@ -63,31 +63,31 @@ const RSS_FEEDS = [
 // -- KV Round-Robin 
 
 async function getNextFeed(env: any) {
-	const total = RSS_FEEDS.length;
-	let indexStr = await env.FEED_STATE.get("index");
-	let index = indexStr ? parseInt(indexStr) : 0;
+  const total = RSS_FEEDS.length;
+  let indexStr = await env.FEED_STATE.get("index");
+  let index = indexStr ? parseInt(indexStr) : 0;
 
-	const feed = RSS_FEEDS[index];
-	const next = (index + 1) % total;
-	await env.FEED_STATE.put("index", next.toString());
+  const feed = RSS_FEEDS[index];
+  const next = (index + 1) % total;
+  await env.FEED_STATE.put("index", next.toString());
 
-	return feed;
+  return feed;
 }
 
 // -- KV Dedup 
 
 async function alreadySent(env: any, link: string) {
-	const keyBuf = new TextEncoder().encode(link);
-	const hashBuf = await crypto.subtle.digest("SHA-1", keyBuf);
-	const hash = Array.from(new Uint8Array(hashBuf))
-		.map(b => b.toString(16).padStart(2, "0"))
-		.join("");
+  const keyBuf = new TextEncoder().encode(link);
+  const hashBuf = await crypto.subtle.digest("SHA-1", keyBuf);
+  const hash = Array.from(new Uint8Array(hashBuf))
+    .map(b => b.toString(16).padStart(2, "0"))
+    .join("");
 
-	const exists = await env.SENT_HASHES.get(hash);
-	if (exists) return true;
+  const exists = await env.SENT_HASHES.get(hash);
+  if (exists) return true;
 
-	await env.SENT_HASHES.put(hash, "1", { expirationTtl: 7 * 24 * 60 * 60 }); // 7 روز
-	return false;
+  await env.SENT_HASHES.put(hash, "1", { expirationTtl: 7 * 24 * 60 * 60 }); // 7 روز
+  return false;
 }
 
 // -- Translate 

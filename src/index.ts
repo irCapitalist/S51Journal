@@ -221,10 +221,10 @@ async function processFeed(feed: any, env: any) {
             const translatedTitle = title//await translateToFa(title);
 
 			const message =
-				`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
-				`🌍 <i>${escapeHtml(title)}</i>\n\n` +
-				(summary ? `${escapeHtml(summary)}\n\n` : "") +
-				;//`🔗 <a href="${link}">Read full article</a>\n\n` +
+				`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` ;//+
+				//`🌍 <i>${escapeHtml(title)}</i>\n\n` +
+				//(summary ? `${escapeHtml(summary)}\n\n` : "") +
+				//`🔗 <a href="${link}">Read full article</a>\n\n` +
 				//`Source: <b>${feed.name}</b>\n\n` +
 				//`Political: ${feed.political}\n\n` +
 				//`Economic: ${feed.economic}`;

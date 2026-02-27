@@ -234,7 +234,7 @@ async function processFeed(feed: any, env: any) {
                 body: JSON.stringify({
                     chat_id: env.CHAT_ID,
                     message_thread_id: Number(env.THREAD_ID),
-				text: "2 ${link}",
+				text: link,
                     parse_mode: "HTML",
                     disable_web_page_preview: false
                 })
@@ -250,7 +250,7 @@ async function processFeed(feed: any, env: any) {
                 body: JSON.stringify({
                     chat_id: env.CHAT_ID,
                     message_thread_id: Number(env.THREAD_ID),
-				text: "3 ${summary}",
+				text: summary,
                     parse_mode: "HTML",
                     disable_web_page_preview: false
                 })

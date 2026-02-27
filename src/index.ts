@@ -1,68 +1,61 @@
 // src/index.ts
 
 const RSS_FEEDS = [
-	{
-		name: "Guardian",
-		political: "Centre-left, social liberal",
-		economic: "Pro-welfare state, regulated market economy",
-		url: "https://www.theguardian.com/world/rss"
-	}, // :contentReference[oaicite:0]{index=0}
+  {
+    name: "Guardian",
+    political: "Centre-left, social liberal",
+    economic: "Pro-welfare state, regulated market economy",
+    url: "https://www.theguardian.com/world/rss"
+  }, // :contentReference[oaicite:0]{index=0}
 
-	{
-		name: "NYT",
-		political: "Centre-left, mainstream liberal",
-		economic: "Market economy with regulatory oversight and social spending",
-		url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
-	}, // :contentReference[oaicite:1]{index=1}
+  {
+    name: "NYT",
+    political: "Centre-left, mainstream liberal",
+    economic: "Market economy with regulatory oversight and social spending",
+    url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml"
+  }, // :contentReference[oaicite:1]{index=1}
 
-	{
-		name: "CNN",
-		political: "Centrist to centre-left",
-		economic: "Market-oriented with institutional regulation",
-		url: "http://rss.cnn.com/rss/edition.rss"
-	}, // :contentReference[oaicite:2]{index=2}
+  {
+    name: "CNN",
+    political: "Centrist to centre-left",
+    economic: "Market-oriented with institutional regulation",
+    url: "http://rss.cnn.com/rss/edition.rss"
+  }, // :contentReference[oaicite:2]{index=2}
 
-	{
-		name: "BBC",
-		political: "Institutional centrist, public-service model",
-		economic: "Mixed economy coverage, macro policy neutral framing",
-		url: "http://feeds.bbci.co.uk/news/rss.xml"
-	}, // :contentReference[oaicite:3]{index=3}
+  {
+    name: "BBC",
+    political: "Institutional centrist, public-service model",
+    economic: "Mixed economy coverage, macro policy neutral framing",
+    url: "http://feeds.bbci.co.uk/news/rss.xml"
+  }, // :contentReference[oaicite:3]{index=3}
 
-	{
-		name: "Bloomberg",
-		political: "Technocratic, pro-market institutional",
-		economic: "Global finance-oriented, capital market focus",
-		url: "https://feeds.bloomberg.com/markets/news.rss"
-	}, // :contentReference[oaicite:4]{index=4}
+  {
+    name: "Bloomberg",
+    political: "Technocratic, pro-market institutional",
+    economic: "Global finance-oriented, capital market focus",
+    url: "https://feeds.bloomberg.com/markets/news.rss"
+  }, // :contentReference[oaicite:4]{index=4}
 
-	{
-		name: "WSJ",
-		political: "Centre-right (notably editorial board)",
-		economic: "Free-market, deregulation, lower taxation",
-		url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
-	}, // :contentReference[oaicite:5]{index=5}
+  {
+    name: "WSJ",
+    political: "Centre-right (notably editorial board)",
+    economic: "Free-market, deregulation, lower taxation",
+    url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
+  }, // :contentReference[oaicite:5]{index=5}
 
-	{
-		name: "Fox",
-		political: "Conservative, right-wing",
-		economic: "Free-market capitalism, low-tax, anti-regulation",
-		url: "https://moxie.foxnews.com/google-publisher/latest.xml"
-	}, // :contentReference[oaicite:6]{index=6}
+  {
+    name: "Fox",
+    political: "Conservative, right-wing",
+    economic: "Free-market capitalism, low-tax, anti-regulation",
+    url: "https://moxie.foxnews.com/google-publisher/latest.xml"
+  }, // :contentReference[oaicite:6]{index=6}
 
-	{
-		name: "Reuters Middle East",
-		political: "Mainstream global news, varied coverage",
-		economic: "Mixed economy reporting, global markets context",
-		url: "https://news.google.com/rss/search?q=site:reuters.com+Middle+East"
-	}, // :contentReference[oaicite:8]{index=8}
-
-	{
-		name: "DailyMail",
-		political: "Right-wing populist, conservative-national",
-		economic: "Market-oriented, limited macroeconomic analysis",
-		url: "https://www.dailymail.co.uk/articles.rss"
-	} // :contentReference[oaicite:7]{index=7}
+  {
+    name: "DailyMail",
+    political: "Right-wing populist, conservative-national",
+    economic: "Market-oriented, limited macroeconomic analysis",
+    url: "https://www.dailymail.co.uk/articles.rss"
+  } // :contentReference[oaicite:7]{index=7}
 ];
 
 // -------------------- Helpers --------------------
@@ -196,24 +189,24 @@ async function processFeed(feed: any, env: any) {
 			if (await alreadySent(env, link)) continue;
 			
 			const translatedTitle = await translateToFa(title);
-			const translatedSummary = summary
+			/*const translatedSummary = summary
 				? await translateToFa(summary)
-				: "";
+				: "";*/
 	
 			const message =
-				`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
+			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
 
-				(translatedSummary
-				? `${escapeHtml(translatedSummary)}\n\n`
+			  `🌍 <i>${escapeHtml(title)}</i>\n\n` +
+
+			  (summary
+				? `${escapeHtml(summary)}\n\n`
 				: "") +
 
-				`🌍 <i>${escapeHtml(title)}</i>\n\n` +
+			  `🔗 <a href="${link}">Read full article</a>\n\n` +
 
-				`🔗 <a href="${link}">Read full article</a>\n\n` +
-
-				`Source: ${escapeHtml(feed.name)}\n` +
-				`Political: ${escapeHtml(feed.political)}\n` +
-				`Economic: ${escapeHtml(feed.economic)}`;
+			  `Source: ${escapeHtml(feed.name)}\n\n` +
+			  `Political: ${escapeHtml(feed.political)}\n\n` +
+			  `Economic: ${escapeHtml(feed.economic)}`;
 
 			await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
 				method: "POST",

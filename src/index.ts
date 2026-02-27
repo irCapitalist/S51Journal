@@ -220,30 +220,23 @@ async function processFeed(feed: any, env: any) {
             // ترجمه عنوان
             const translatedTitle = title//await translateToFa(title);
 
-			const message = "r"
-				//`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n`+
-				//`🌍 <i>${escapeHtml(title)}</i>\n\n` +
-				//(summary ? `${escapeHtml(summary)}\n\n` : "") +
-				//`🔗 <a href="${link}">Read full article</a>\n\n` +
-				//`Source: <b>${feed.name}</b>\n\n` +
-				//`Political: ${feed.political}\n\n` +
-				//`Economic: ${feed.economic}`;
-				
-			const res = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					chat_id: env.CHAT_ID,
-					message_thread_id: Number(env.THREAD_ID),
-					text: message,
-					parse_mode: "HTML",
-					disable_web_page_preview: false
-				})
-			});
+		  const message =
+			`📰 <b>${title}</b>\n\n` +
+			(summary ? `${summary}\n\n` : "") +
+			`🔗 <a href="${link}">Read full article</a>\n\n` +
+			`Source: ${feed.name}`;
 
-			if (!res.ok) {
-				console.error("Telegram error:", await res.text());
-			}
+            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: env.CHAT_ID,
+                    message_thread_id: Number(env.THREAD_ID),
+                    text: message,
+                    parse_mode: "HTML",
+                    disable_web_page_preview: false
+                })
+            });
         }
     } catch (e) {
         console.error(`Error processing feed ${feed.name}:`, e);

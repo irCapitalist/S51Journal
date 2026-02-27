@@ -181,17 +181,19 @@ async function formatToTelegramText(item: string, feed: any): Promise<string> {
     const link = extractCDATA(item, "link") || extractCDATA(item, "guid");
     const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
 
-    // حذف تگ‌های HTML و تبدیل آن به فرمت تلگرام
-    const strippedContent = stripHtml(rawContent);
-    const telegramFormattedContent = convertToTelegramFormat(strippedContent);
-    const summary = telegramFormattedContent.slice(0, 600); // محدود کردن به 600 کاراکتر
+    // ابتدا لینک‌ها را فرمت‌دهی کنید
+    const telegramFormattedContent = convertToTelegramFormat(rawContent);
+
+    // حالا محتوای متنی را از تگ‌های HTML پاک کنید
+    const strippedContent = stripHtml(telegramFormattedContent);
+    const summary = strippedContent.slice(0, 600); // محدود کردن به 600 کاراکتر
 
     if (!title || !link) return "";
 
     // ساخت پیام نهایی
     const message =
         `📰 <b>${escapeHtml(title)}</b>\n\n` +
-        `🌍 <i>${escapeHtml(telegramFormattedContent)}</i>\n\n` +
+        `🌍 <i>${escapeHtml(strippedContent)}</i>\n\n` +
         (summary ? `${escapeHtml(summary)}\n\n` : "") +
         `🔗 <a href="${link}">Read full article</a>\n\n` +
         `Source: ${escapeHtml(feed.name)}\n\n` +

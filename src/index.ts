@@ -119,6 +119,19 @@ async function translateToFa(text: string): Promise<string> {
 
 // -- Process Feed 
 
+function extractLink(item: string, feedUrl: string): string {
+    // اول <link> و <guid>
+    let link = extractTag(item, "link") || extractTag(item, "guid");
+    if (link && link.startsWith("http")) return link;
+
+    // سپس <atom:link href="...">
+    const atomMatch = item.match(/<atom:link[^>]+href="([^"]+)"/i);
+    if (atomMatch) return atomMatch[1];
+
+    // fallback به feed.url
+    return feedUrl;
+}
+
 function extractTag(item: string, tag: string): string {
     const regex = new RegExp(
         `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
@@ -179,44 +192,39 @@ async function processFeed(feed: any, env: any) {
         const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
         const xml = await response.text();
 
-        // استخراج آیتم‌ها
         const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
         if (!items) return;
 
         for (const item of items.slice(0, 2)) {
 
-			// لینک را فقط استخراج و عدم پاکسازی
-			let rawLink = extractTag(item, "link") || extractTag(item, "guid") || feed.url;
-			const link = rawLink;
-			if (!link) continue;
+            // لینک با fallback کامل
+            const link = extractLink(item, feed.url);
+            if (!link) continue;
 
-			// خلاصه و محتوای اصلی
-			const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
-			const summary = cleanText(rawContent).slice(0, 600);
+            // محتوای اصلی و خلاصه
+            const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
+            const summary = cleanText(rawContent).slice(0, 600);
 
-			// عنوان
-			const rawTitle = extractTag(item, "title");
-			if (!rawTitle) continue;
-			
-			const title = cleanText(rawTitle);
+            // عنوان
+            const rawTitle = extractTag(item, "title");
+            if (!rawTitle) continue;
+            const title = cleanText(rawTitle);
 
-            // بررسی اینکه قبلاً ارسال نشده باشد
+            // بررسی ارسال قبلی
             if (await alreadySent(env, link)) continue;
 
             // ترجمه عنوان
             const translatedTitle = await translateToFa(title);
 
-            // ساخت پیام، escape فقط روی متن ساده
             const message =
                 `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
                 `🌍 <i>${escapeHtml(title)}</i>\n\n` +
-                (summary ? `${summary}\n\n` : "") + // summary از قبل Markdown شده
+                (summary ? `${summary}\n\n` : "") +
                 `🔗 <a href="${link}">Read full article</a>\n\n` +
                 `Source: ${escapeHtml(feed.name)}\n\n` +
                 `Political: ${escapeHtml(feed.political)}\n\n` +
                 `Economic: ${escapeHtml(feed.economic)}`;
 
-            // ارسال به تلگرام
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

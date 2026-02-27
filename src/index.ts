@@ -213,7 +213,7 @@ async function processFeed(feed: any, env: any) {
         for (const item of items.slice(0, 2)) {
 
             // لینک با fallback کامل
-            const link = extractLink(item) || feed.url;//extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
+            const link = extractCDATA(item, "link") || extractCDATA(item, "guid"); //extractLink(item) || feed.url;//extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
             if (!link) continue;
 
             // محتوای اصلی و خلاصه

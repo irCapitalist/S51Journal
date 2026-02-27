@@ -74,49 +74,6 @@ async function getNextFeed(env: any) {
   return feed;
 }
 
-// -- KV Dedup 
-
-async function alreadySent(env: any, link: string) {
-  const keyBuf = new TextEncoder().encode(link);
-  const hashBuf = await crypto.subtle.digest("SHA-1", keyBuf);
-  const hash = Array.from(new Uint8Array(hashBuf))
-    .map(b => b.toString(16).padStart(2, "0"))
-    .join("");
-
-  const exists = await env.SENT_HASHES.get(hash);
-  if (exists) return true;
-
-  await env.SENT_HASHES.put(hash, "1", { expirationTtl: 7 * 24 * 60 * 60 }); // 7 روز
-  return false;
-}
-
-// -- Translate 
-
-async function translateToFa(text: string): Promise<string> {
-	if (!text) return "";
-
-	// اگر متن قبلاً فارسی باشد ترجمه نکن
-	if (/[\u0600-\u06FF]/.test(text)) return text;
-
-	try {
-		const url =
-			"https://translate.googleapis.com/translate_a/single" +
-			`?client=gtx&sl=auto&tl=fa&dt=t&q=${encodeURIComponent(text)}`;
-
-		const res = await fetch(url, {
-			headers: { "User-Agent": "Mozilla/5.0" }
-		});
-
-		if (!res.ok) return text;
-
-		const data = await res.json();
-		return data[0].map((t: any) => t[0]).join("");
-	
-	} catch {
-		return text; // اگر ترجمه شکست خورد متن اصلی ارسال شود
-	}
-}
-
 // -- Process Feed 
 
 async function processFeed(feed: any, env: any) {

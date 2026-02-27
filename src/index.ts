@@ -1,6 +1,21 @@
 // src/index.ts
 
 const RSS_FEEDS = [
+
+  {
+    name: "DailyMail",
+    political: "Right-wing populist, conservative-national",
+    economic: "Market-oriented, limited macroeconomic analysis",
+    url: "https://www.dailymail.co.uk/articles.rss"
+  } // :contentReference[oaicite:7]{index=7}
+
+  {
+    name: "Fox",
+    political: "Conservative, right-wing",
+    economic: "Free-market capitalism, low-tax, anti-regulation",
+    url: "https://moxie.foxnews.com/google-publisher/latest.xml"
+  }, // :contentReference[oaicite:6]{index=6}
+  
   {
     name: "Guardian",
     political: "Centre-left, social liberal",
@@ -43,22 +58,9 @@ const RSS_FEEDS = [
     url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
   }, // :contentReference[oaicite:5]{index=5}
 
-  {
-    name: "Fox",
-    political: "Conservative, right-wing",
-    economic: "Free-market capitalism, low-tax, anti-regulation",
-    url: "https://moxie.foxnews.com/google-publisher/latest.xml"
-  }, // :contentReference[oaicite:6]{index=6}
-
-  {
-    name: "DailyMail",
-    political: "Right-wing populist, conservative-national",
-    economic: "Market-oriented, limited macroeconomic analysis",
-    url: "https://www.dailymail.co.uk/articles.rss"
-  } // :contentReference[oaicite:7]{index=7}
 ];
 
-// -------------------- KV Round-Robin --------------------
+// -- KV Round-Robin 
 
 async function getNextFeed(env: any) {
 	const total = RSS_FEEDS.length;
@@ -72,7 +74,7 @@ async function getNextFeed(env: any) {
 	return feed;
 }
 
-// -------------------- KV Dedup --------------------
+// -- KV Dedup 
 
 async function alreadySent(env: any, link: string) {
 	const keyBuf = new TextEncoder().encode(link);
@@ -88,7 +90,7 @@ async function alreadySent(env: any, link: string) {
 	return false;
 }
 
-// -------------------- Translate --------------------
+// -- Translate 
 
 async function translateToFa(text: string): Promise<string> {
 	if (!text) return "";
@@ -115,24 +117,28 @@ async function translateToFa(text: string): Promise<string> {
 	}
 }
 
-// -------------------- Process Feed --------------------
+// -- Process Feed 
 
-/**
- * cleanText: تابع یکپارچه برای آماده‌سازی متن RSS قبل از ارسال
- * کارکردها:
- * - استخراج محتوا از CDATA
- * - حذف تگ‌های HTML
- * - decode موجودیت‌های HTML
- * - escape کاراکترهای خاص برای تلگرام
- * - تبدیل لینک‌های <a href=""> به فرمت Markdown تلگرام
- * - فشرده‌سازی فاصله‌ها و trim
- */
+
 function cleanText(input: string, tag?: string): string {
     if (!input) return "";
-
+	
+	/*
+	 * cleanText: تابع یکپارچه برای آماده‌سازی متن RSS قبل از ارسال
+	 * ترتیب درست اعمال Regex:
+	 * 1. تبدیل لینک <a> به Markdown
+	 * 2. استخراج محتوا از CDATA
+	 * 3. decode موجودیت‌های HTML
+	 * 4. حذف بقیه تگ‌های HTML
+	 * 5. فشرده‌سازی فاصله‌ها و trim
+	 */
+	 
     let text = input;
 
-    // 1. استخراج محتوا از CDATA (اگر tag داده شده باشد)
+    // 1. تبدیل لینک‌های <a href="...">...</a> به Markdown تلگرام
+    text = text.replace(/<a href="([^"]+)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+
+    // 2. استخراج محتوا از CDATA اگر tag مشخص شده باشد
     if (tag) {
         const regex = new RegExp(
             `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
@@ -142,7 +148,7 @@ function cleanText(input: string, tag?: string): string {
         if (match) text = match[1];
     }
 
-    // 2. decode موجودیت‌های HTML
+    // 3. decode موجودیت‌های HTML
     text = text
         .replace(/&apos;/g, "'")
         .replace(/&quot;/g, '"')
@@ -151,11 +157,8 @@ function cleanText(input: string, tag?: string): string {
         .replace(/&gt;/g, ">")
         .replace(/&#39;/g, "'");
 
-    // 3. حذف تمام تگ‌های HTML
+    // 4. حذف تگ‌های HTML باقیمانده
     text = text.replace(/<[^>]+>/g, "");
-
-    // 4. تبدیل لینک‌های <a href="">...</a> به فرمت تلگرام Markdown
-    text = text.replace(/<a href="([^"]+)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
 
     // 5. حذف فاصله‌های اضافی و trim
     text = text.replace(/\s+/g, " ").trim();
@@ -188,14 +191,13 @@ async function processFeed(feed: any, env: any) {
             // اگر خواستید ترجمه خلاصه را هم فعال کنید، مشابه زیر:
             // const translatedSummary = summary ? await translateToFa(summary) : "";
 
-            const message =
-                `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
-                `🌍 <i>${escapeHtml(title)}</i>\n\n` +
-                (summary ? `${escapeHtml(summary)}\n\n` : "") +
-                `🔗 <a href="${link}">Read full article</a>\n\n` +
-                `Source: ${escapeHtml(feed.name)}\n\n` +
-                `Political: ${escapeHtml(feed.political)}\n\n` +
-                `Economic: ${escapeHtml(feed.economic)}`;
+            const message =		`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
+								`🌍 <i>${escapeHtml(title)}</i>\n\n` +
+								(summary ? `${escapeHtml(summary)}\n\n` : "") +
+								`🔗 <a href="${link}">Read full article</a>\n\n` +
+								`Source: ${escapeHtml(feed.name)}\n\n` +
+								`Political: ${escapeHtml(feed.political)}\n\n` +
+								`Economic: ${escapeHtml(feed.economic)}`;
 
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",

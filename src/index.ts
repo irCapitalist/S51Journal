@@ -185,20 +185,20 @@ async function processFeed(feed: any, env: any) {
 
         for (const item of items.slice(0, 2)) {
 
-            // استخراج عنوان و پاک‌سازی
-            const rawTitle = extractTag(item, "title");
-            if (!rawTitle) continue;
-            const title = cleanText(rawTitle);
+			// لینک را فقط استخراج و عدم پاکسازی
+			let rawLink = extractTag(item, "link") || extractTag(item, "guid") || feed.url;
+			const link = rawLink;
+			if (!link) continue;
 
-            // استخراج لینک با fallback
-            let rawLink = extractTag(item, "link") || extractTag(item, "guid") || feed.url;
-            const link = cleanText(rawLink);
-            if (!link) continue;
+			// خلاصه و محتوای اصلی
+			const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
+			const summary = cleanText(rawContent).slice(0, 600);
 
-            // استخراج محتوای اصلی و محدود کردن به 600 کاراکتر
-            const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
-            let summary = rawContent.slice(0, 600);        // ابتدا slice
-            summary = cleanText(summary);                 // سپس پاک‌سازی و Markdown
+			// عنوان
+			const rawTitle = extractTag(item, "title");
+			if (!rawTitle) continue;
+			
+			const title = cleanText(rawTitle);
 
             // بررسی اینکه قبلاً ارسال نشده باشد
             if (await alreadySent(env, link)) continue;

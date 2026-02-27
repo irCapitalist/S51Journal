@@ -227,22 +227,22 @@ async function processFeed(feed: any, env: any) {
 			
             const title = cleanText(rawTitle);
 
+            // بررسی ارسال قبلی
+            if (await alreadySent(env, link)) continue;
+			
 			            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     chat_id: env.CHAT_ID,
                     message_thread_id: Number(env.THREAD_ID),
-				text: title,
+				text: await alreadySent(env, link),
                     parse_mode: "HTML",
                     disable_web_page_preview: false
                 })
             });
 			
 			
-            // بررسی ارسال قبلی
-            if (await alreadySent(env, link)) continue;
-
             // ترجمه عنوان
             const translatedTitle = await translateToFa(title);
 

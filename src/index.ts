@@ -58,65 +58,6 @@ const RSS_FEEDS = [
   } // :contentReference[oaicite:7]{index=7}
 ];
 
-// -------------------- Helpers --------------------
-
-function stripHtml(html: string): string {
-	// هر چیزی که بین < و > باشد را حذف می‌کند.
-	// <p> ها حذف می‌شود
-	// هر تعداد فاصله، newline، tab و… را به یک فاصله ساده تبدیل می‌کند.
-	// فاصله‌های ابتدا و انتهای رشته حذف می‌شود.
-	return html.replace(/<[^>]+>/g, "").replace(/\s+/g, " ").trim();
-}
-
-function decodeHtmlEntities(text: string): string {
-	// decodeHtmlEntities برای تمیز کردن داده ورودی RSS است.
-	return text
-		.replace(/&apos;/g, "'")
-		.replace(/&quot;/g, '"')
-		.replace(/&amp;/g, "&")
-		.replace(/&lt;/g, "<")
-		.replace(/&gt;/g, ">")
-		.replace(/&#39;/g, "'");
-}
-
-function escapeHtml(text: string): string {
-	// جلوگیری از خطای HTML در تلگرام
-	return text
-		.replace(/&/g, "&amp;")
-		.replace(/</g, "&lt;")
-		.replace(/>/g, "&gt;");
-}
-
-function extractCDATA(content: string, tag: string): string {
-	const regex = new RegExp(
-		`<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
-		"i"
-	);
-	const match = content.match(regex);
-	return match ? match[1].trim() : "";
-}
-
-function extractLink(item: string, feedUrl: string): string {
-	// 1. standard <link>value</link>
-	let link = extractCDATA(item, "link");
-	if (link) return link;
-
-	// 2. <guid> fallback
-	link = extractCDATA(item, "guid");
-	if (link && link.startsWith("http")) return link;
-
-	// 3. <atom:link href="...">
-	const atomMatch = item.match(/<atom:link[^>]+href="([^"]+)"/i);
-	if (atomMatch) return atomMatch[1];
-
-	// 4. fallback به homepage سایت
-	return feedUrl;
-}
-
-function convertToTelegramFormat(content: string): string {
-    return content.replace(/<a href="([^"]+)"[^>]*>(.*?)<\/a>/g, '[$2]($1)');
-}
-
 // -------------------- KV Round-Robin --------------------
 
 async function getNextFeed(env: any) {
@@ -176,58 +117,101 @@ async function translateToFa(text: string): Promise<string> {
 
 // -------------------- Process Feed --------------------
 
+/**
+ * cleanText: تابع یکپارچه برای آماده‌سازی متن RSS قبل از ارسال
+ * کارکردها:
+ * - استخراج محتوا از CDATA
+ * - حذف تگ‌های HTML
+ * - decode موجودیت‌های HTML
+ * - escape کاراکترهای خاص برای تلگرام
+ * - تبدیل لینک‌های <a href=""> به فرمت Markdown تلگرام
+ * - فشرده‌سازی فاصله‌ها و trim
+ */
+function cleanText(input: string, tag?: string): string {
+    if (!input) return "";
+
+    let text = input;
+
+    // 1. استخراج محتوا از CDATA (اگر tag داده شده باشد)
+    if (tag) {
+        const regex = new RegExp(
+            `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
+            "i"
+        );
+        const match = text.match(regex);
+        if (match) text = match[1];
+    }
+
+    // 2. decode موجودیت‌های HTML
+    text = text
+        .replace(/&apos;/g, "'")
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, "&")
+        .replace(/&lt;/g, "<")
+        .replace(/&gt;/g, ">")
+        .replace(/&#39;/g, "'");
+
+    // 3. حذف تمام تگ‌های HTML
+    text = text.replace(/<[^>]+>/g, "");
+
+    // 4. تبدیل لینک‌های <a href="">...</a> به فرمت تلگرام Markdown
+    text = text.replace(/<a href="([^"]+)"[^>]*>(.*?)<\/a>/gi, '[$2]($1)');
+
+    // 5. حذف فاصله‌های اضافی و trim
+    text = text.replace(/\s+/g, " ").trim();
+
+    return text;
+}
+
 async function processFeed(feed: any, env: any) {
-	try {
-		const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
-		const xml = await response.text();
-		const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
-		if (!items) return;
+    try {
+        const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
+        const xml = await response.text();
 
-		for (const item of items.slice(0, 2)) {
-			const title = decodeHtmlEntities(stripHtml(extractCDATA(item, "title")));
-			const link = extractCDATA(item, "link") || extractCDATA(item, "guid");
-			const rawContent = extractCDATA(item, "content:encoded") || extractCDATA(item, "description") || "";
+        // استخراج آیتم‌ها
+        const items = xml.match(/<item>([\s\S]*?)<\/item>/gi);
+        if (!items) return;
 
-			const strippedContent = stripHtml(rawContent);
-			const telegramFormattedContent = convertToTelegramFormat(strippedContent);
-			const summary = telegramFormattedContent.slice(0, 600);
+        for (const item of items.slice(0, 2)) {
+            // عنوان و لینک با cleanText
+            const title = cleanText(item, "title");
+            let link = cleanText(item, "link") || cleanText(item, "guid") || feed.url;
 
-			if (!title || !link) continue;
-			if (await alreadySent(env, link)) continue;
-			
-			const translatedTitle = await translateToFa(title);
-			/*const translatedSummary = summary
-				? await translateToFa(summary)
-				: "";*/
-	
-			const message =
-			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
+            // محتوای اصلی و خلاصه
+            const rawContent = cleanText(item, "content:encoded") || cleanText(item, "description") || "";
+            const summary = rawContent.slice(0, 600); // حداکثر 600 کاراکتر
 
-			  `🌍 <i>${escapeHtml(title)}</i>\n\n` +
+            if (!title || !link) continue;
+            if (await alreadySent(env, link)) continue;
 
-			  (summary ? `${escapeHtml(summary)}\n\n`: "") +
+            const translatedTitle = await translateToFa(title);
+            // اگر خواستید ترجمه خلاصه را هم فعال کنید، مشابه زیر:
+            // const translatedSummary = summary ? await translateToFa(summary) : "";
 
-			  `🔗 <a href="${link}">Read full article</a>\n\n` +
+            const message =
+                `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
+                `🌍 <i>${escapeHtml(title)}</i>\n\n` +
+                (summary ? `${escapeHtml(summary)}\n\n` : "") +
+                `🔗 <a href="${link}">Read full article</a>\n\n` +
+                `Source: ${escapeHtml(feed.name)}\n\n` +
+                `Political: ${escapeHtml(feed.political)}\n\n` +
+                `Economic: ${escapeHtml(feed.economic)}`;
 
-			  `Source: ${escapeHtml(feed.name)}\n\n` +
-			  `Political: ${escapeHtml(feed.political)}\n\n` +
-			  `Economic: ${escapeHtml(feed.economic)}`;
-
-			await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					chat_id: env.CHAT_ID,
-					message_thread_id: Number(env.THREAD_ID),
-					text: message,
-					parse_mode: "HTML",
-					disable_web_page_preview: false
-				})
-			});
-		}
-	} catch (e) {
-		console.error(`Error processing feed ${feed.name}:`, e);
-	}
+            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: env.CHAT_ID,
+                    message_thread_id: Number(env.THREAD_ID),
+                    text: message,
+                    parse_mode: "HTML",
+                    disable_web_page_preview: false
+                })
+            });
+        }
+    } catch (e) {
+        console.error(`Error processing feed ${feed.name}:`, e);
+    }
 }
 
 // -------------------- Scheduled Worker --------------------

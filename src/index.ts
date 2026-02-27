@@ -220,8 +220,8 @@ async function processFeed(feed: any, env: any) {
             // ترجمه عنوان
             const translatedTitle = title//await translateToFa(title);
 
-			const message =
-				`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` ;//+
+			const message = "r"
+				//`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n`+
 				//`🌍 <i>${escapeHtml(title)}</i>\n\n` +
 				//(summary ? `${escapeHtml(summary)}\n\n` : "") +
 				//`🔗 <a href="${link}">Read full article</a>\n\n` +

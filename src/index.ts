@@ -243,7 +243,6 @@ async function processFeed(feed: any, env: any) {
 
 			if (!res.ok) {
 				console.error("Telegram error:", await res.text());
-				
 			}
         }
     } catch (e) {

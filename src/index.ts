@@ -231,16 +231,15 @@ async function processFeed(feed: any, env: any) {
             //if (await alreadySent(env, title)) continue;
 
             // ترجمه عنوان
-            const translatedTitle = await translateToFa(title);
+            const translatedTitle = title//await translateToFa(title);
 
-            const message =
-                `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
-                `🌍 <i>${escapeHtml(title)}</i>\n\n` +
-                (summary ? `${summary}\n\n` : "") +
-                `🔗 <a href="${link}">Read full article</a>\n\n` +
-                `Source: ${escapeHtml(feed.name)}\n\n` +
-                `Political: ${escapeHtml(feed.political)}\n\n` +
-                `Economic: ${escapeHtml(feed.economic)}`;
+            const message = `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
+							`🌍 <i>${escapeHtml(title)}</i>\n\n` +
+							(summary ? `${summary}\n\n` : "") +
+							`🔗 <a href="${link}">Read full article</a>\n\n` +
+							`Source: ${escapeHtml(feed.name)}\n\n` +
+							`Political: ${escapeHtml(feed.political)}\n\n` +
+							`Economic: ${escapeHtml(feed.economic)}`;
 
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",

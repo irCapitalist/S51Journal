@@ -146,19 +146,13 @@ async function processFeed(feed: any, env: any) {
 				? await translateToFa(summary)
 				: "";
 	
-			/*const message =
-				`📰 <b>${title}</b>\n\n` +
-				(summary ? `${summary}\n\n` : "") +
-				`🔗 <a href="${link}">Read full article</a>\n\n` +
-				`Source: ${feed.name}`;*/
-		
 			const message =
 			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n` +
-			  `🌍 <i>${escapeHtml(title)}</i>\n\n` +
+			  `<i>${escapeHtml(title)}</i>\n\n` +
 			  (translatedSummary
 				? `${escapeHtml(translatedSummary)}\n\n`
 				: "") +
-			  `🔗 <a href="${link}">Read full article</a>\n\n` +
+			  `🔗 🌍  <a href="${link}">escapeHtml(title)</a>\n\n` +
 			  `Source: ${feed.name}`;
 		
 

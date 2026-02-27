@@ -23,6 +23,7 @@ Key Features :
 	
 	> Architecture Overview
 	
+	> Translate to Persian automatically
 
 ```
 S51Journal/

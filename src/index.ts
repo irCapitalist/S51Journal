@@ -9,7 +9,7 @@ const RSS_FEEDS = [
     url: "https://www.dailymail.co.uk/articles.rss"
   }, // :contentReference[oaicite:7]{index=7}
 
-  /*{
+  {
     name: "Fox",
     political: "Conservative, right-wing",
     economic: "Free-market capitalism, low-tax, anti-regulation",
@@ -57,7 +57,7 @@ const RSS_FEEDS = [
     economic: "Free-market, deregulation, lower taxation",
     url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
   } // :contentReference[oaicite:5]{index=5}
-*/
+
 ];
 
 // -- KV Round-Robin 

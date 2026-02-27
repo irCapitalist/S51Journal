@@ -7,7 +7,7 @@ const RSS_FEEDS = [
     political: "Right-wing populist, conservative-national",
     economic: "Market-oriented, limited macroeconomic analysis",
     url: "https://www.dailymail.co.uk/articles.rss"
-  } // :contentReference[oaicite:7]{index=7}
+  }, // :contentReference[oaicite:7]{index=7}
 
   {
     name: "Fox",
@@ -56,7 +56,7 @@ const RSS_FEEDS = [
     political: "Centre-right (notably editorial board)",
     economic: "Free-market, deregulation, lower taxation",
     url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
-  }, // :contentReference[oaicite:5]{index=5}
+  } // :contentReference[oaicite:5]{index=5}
 
 ];
 

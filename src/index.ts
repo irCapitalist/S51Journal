@@ -212,14 +212,50 @@ async function processFeed(feed: any, env: any) {
 
         for (const item of items.slice(0, 2)) {
 
+			            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: env.CHAT_ID,
+                    message_thread_id: Number(env.THREAD_ID),
+                    text: "1",
+                    parse_mode: "HTML",
+                    disable_web_page_preview: false
+                })
+            });
+
             // لینک با fallback کامل
-            const link = extractCDATA(item, "link") || extractCDATA(item, "guid"); //extractLink(item) || feed.url;//extractCDATA(item, "link") || extractCDATA(item, "guid") || feed.url;
+            const link = extractCDATA(item, "guid") || feed.url;
             if (!link) continue;
+
+			            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: env.CHAT_ID,
+                    message_thread_id: Number(env.THREAD_ID),
+				text: "2 ${link}",
+                    parse_mode: "HTML",
+                    disable_web_page_preview: false
+                })
+            });
 
             // محتوای اصلی و خلاصه
             const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
+			
             const summary = cleanText(rawContent).slice(0, 600);
-
+			            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    chat_id: env.CHAT_ID,
+                    message_thread_id: Number(env.THREAD_ID),
+				text: "3 ${summary}",
+                    parse_mode: "HTML",
+                    disable_web_page_preview: false
+                })
+            });
+			
             // عنوان
             const rawTitle = extractTag(item, "title");
             if (!rawTitle) continue;

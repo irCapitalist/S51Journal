@@ -228,7 +228,7 @@ async function processFeed(feed: any, env: any) {
             const title = cleanText(rawTitle);
 
             // بررسی ارسال قبلی
-            if (await alreadySent(env, link)) continue;
+            //if (await alreadySent(env, link)) continue;
 			
 			            await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",
@@ -236,7 +236,7 @@ async function processFeed(feed: any, env: any) {
                 body: JSON.stringify({
                     chat_id: env.CHAT_ID,
                     message_thread_id: Number(env.THREAD_ID),
-				text: await alreadySent(env, link),
+				text: link+" "+title,
                     parse_mode: "HTML",
                     disable_web_page_preview: false
                 })

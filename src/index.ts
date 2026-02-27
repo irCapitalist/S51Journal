@@ -119,6 +119,14 @@ async function translateToFa(text: string): Promise<string> {
 
 // -- Process Feed 
 
+function extractTag(item: string, tag: string): string {
+    const regex = new RegExp(
+        `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
+        "i"
+    );
+    const match = item.match(regex);
+    return match ? match[1].trim() : "";
+}
 
 function cleanText(input: string, tag?: string): string {
     if (!input) return "";
@@ -180,9 +188,14 @@ async function processFeed(feed: any, env: any) {
             const title = cleanText(item, "title");
             let link = cleanText(item, "link") || cleanText(item, "guid") || feed.url;
 
-            // محتوای اصلی و خلاصه
-            const rawContent = cleanText(item, "content:encoded") || cleanText(item, "description") || "";
-            const summary = rawContent.slice(0, 600); // حداکثر 600 کاراکتر
+			const rawTitle = extractTag(item, "title");
+			const title = cleanText(rawTitle);
+
+			let rawLink = extractTag(item, "link") || extractTag(item, "guid") || feed.url;
+			const link = cleanText(rawLink);
+
+			const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
+			const summary = cleanText(rawContent).slice(0, 600);
 
             if (!title || !link) continue;
             if (await alreadySent(env, link)) continue;

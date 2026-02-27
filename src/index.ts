@@ -153,9 +153,9 @@ async function processFeed(feed: any, env: any) {
 				`Source: ${feed.name}`;*/
 		
 			const message =
-			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n` + // تیتر ترجمه شده و یک خط فاصله
+			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` + // تیتر ترجمه شده و یک خط فاصله
 			  (translatedSummary ? `${escapeHtml(translatedSummary)}\n\n` : "") + // متن ترجمه شده با دو خط فاصله
-			`🌍 <i>${escapeHtml(title)}</i>\n` + // تیتر منبع با یک خط فاصله
+			`🌍 <i>${escapeHtml(title)}</i>\n\n` + // تیتر منبع با یک خط فاصله
 			  `🔗 <a href="${link}">Read full article</a>\n\n` + // رفرنس
 			  `Source: ${feed.name}`;
 					

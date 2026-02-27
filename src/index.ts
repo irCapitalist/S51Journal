@@ -185,30 +185,38 @@ async function processFeed(feed: any, env: any) {
 
         for (const item of items.slice(0, 2)) {
 
-			const rawTitle = extractTag(item, "title");
-			const title = cleanText(rawTitle);
+            // استخراج عنوان و پاک‌سازی
+            const rawTitle = extractTag(item, "title");
+            if (!rawTitle) continue;
+            const title = cleanText(rawTitle);
 
-			let rawLink = extractTag(item, "link") || extractTag(item, "guid") || feed.url;
-			const link = cleanText(rawLink);
+            // استخراج لینک با fallback
+            let rawLink = extractTag(item, "link") || extractTag(item, "guid") || feed.url;
+            const link = cleanText(rawLink);
+            if (!link) continue;
 
-			const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
-			const summary = cleanText(rawContent).slice(0, 600);
+            // استخراج محتوای اصلی و محدود کردن به 600 کاراکتر
+            const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
+            let summary = rawContent.slice(0, 600);        // ابتدا slice
+            summary = cleanText(summary);                 // سپس پاک‌سازی و Markdown
 
-            if (!title || !link) continue;
+            // بررسی اینکه قبلاً ارسال نشده باشد
             if (await alreadySent(env, link)) continue;
 
+            // ترجمه عنوان
             const translatedTitle = await translateToFa(title);
-            // اگر خواستید ترجمه خلاصه را هم فعال کنید، مشابه زیر:
-            // const translatedSummary = summary ? await translateToFa(summary) : "";
 
-            const message =		`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
-								`🌍 <i>${escapeHtml(title)}</i>\n\n` +
-								(summary ? `${escapeHtml(summary)}\n\n` : "") +
-								`🔗 <a href="${link}">Read full article</a>\n\n` +
-								`Source: ${escapeHtml(feed.name)}\n\n` +
-								`Political: ${escapeHtml(feed.political)}\n\n` +
-								`Economic: ${escapeHtml(feed.economic)}`;
+            // ساخت پیام، escape فقط روی متن ساده
+            const message =
+                `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
+                `🌍 <i>${escapeHtml(title)}</i>\n\n` +
+                (summary ? `${summary}\n\n` : "") + // summary از قبل Markdown شده
+                `🔗 <a href="${link}">Read full article</a>\n\n` +
+                `Source: ${escapeHtml(feed.name)}\n\n` +
+                `Political: ${escapeHtml(feed.political)}\n\n` +
+                `Economic: ${escapeHtml(feed.economic)}`;
 
+            // ارسال به تلگرام
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

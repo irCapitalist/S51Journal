@@ -189,18 +189,18 @@ async function processFeed(feed: any, env: any) {
 			if (await alreadySent(env, link)) continue;
 			
 			const translatedTitle = await translateToFa(title);
-			const translatedSummary = summary
+			/*const translatedSummary = summary
 				? await translateToFa(summary)
-				: "";
+				: "";*/
 	
 			const message =
 			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
 
+			  `🌍 <i>${escapeHtml(title)}</i>\n\n` +
+
 			  (summary
 				? `${escapeHtml(summary)}\n\n`
 				: "") +
-
-			  `🌍 <i>${escapeHtml(title)}</i>\n\n` +
 
 			  `🔗 <a href="${link}">Read full article</a>\n\n` +
 

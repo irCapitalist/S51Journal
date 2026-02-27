@@ -224,10 +224,10 @@ async function processFeed(feed: any, env: any) {
 				`📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
 				`🌍 <i>${escapeHtml(title)}</i>\n\n` +
 				(summary ? `${escapeHtml(summary)}\n\n` : "") +
-				`🔗 <a href="${link}">Read full article</a>\n\n` +
-				`Source: <b>${feed.name}</b>\n\n` +
-				`Political: ${feed.political}\n\n` +
-				`Economic: ${feed.economic}`;
+				;//`🔗 <a href="${link}">Read full article</a>\n\n` +
+				//`Source: <b>${feed.name}</b>\n\n` +
+				//`Political: ${feed.political}\n\n` +
+				//`Economic: ${feed.economic}`;
 				
 			const res = await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
 				method: "POST",

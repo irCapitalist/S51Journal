@@ -88,7 +88,7 @@ async function processFeed(feed: any, env: any) {
 			parse_mode: "HTML",
 			disable_web_page_preview: false
 		})
-	}
+	};
 }
 
 // -------------------- Scheduled Worker --------------------

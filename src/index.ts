@@ -184,9 +184,6 @@ async function processFeed(feed: any, env: any) {
         if (!items) return;
 
         for (const item of items.slice(0, 2)) {
-            // عنوان و لینک با cleanText
-            const title = cleanText(item, "title");
-            let link = cleanText(item, "link") || cleanText(item, "guid") || feed.url;
 
 			const rawTitle = extractTag(item, "title");
 			const title = cleanText(rawTitle);

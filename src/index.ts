@@ -233,7 +233,11 @@ async function processFeed(feed: any, env: any) {
             // ترجمه عنوان
             const translatedTitle = title//await translateToFa(title);
 
-            const message = "test"
+      const message =
+        `📰 <b>${title}</b>\n\n` +
+        (summary ? `${summary}\n\n` : "") +
+        `🔗 <a href="${link}">Read full article</a>\n\n` +
+        `Source: ${feed.name}`;
 
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",

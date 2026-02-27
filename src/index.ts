@@ -120,6 +120,18 @@ async function translateToFa(text: string): Promise<string> {
 // -- Process Feed 
 
 async function processFeed(feed: any, env: any) {
+	
+		await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				chat_id: env.CHAT_ID,
+				message_thread_id: Number(env.THREAD_ID),
+				text: `offfff`,
+				parse_mode: "HTML",
+				disable_web_page_preview: false
+			})
+	
     try {
         const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
         const xml = await response.text();

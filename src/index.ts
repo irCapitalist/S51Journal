@@ -9,7 +9,7 @@ const RSS_FEEDS = [
     url: "https://www.dailymail.co.uk/articles.rss"
   }, // :contentReference[oaicite:7]{index=7}
 
-  {
+  /*{
     name: "Fox",
     political: "Conservative, right-wing",
     economic: "Free-market capitalism, low-tax, anti-regulation",
@@ -57,7 +57,7 @@ const RSS_FEEDS = [
     economic: "Free-market, deregulation, lower taxation",
     url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml"
   } // :contentReference[oaicite:5]{index=5}
-
+*/
 ];
 
 // -- KV Round-Robin 
@@ -119,76 +119,6 @@ async function translateToFa(text: string): Promise<string> {
 
 // -- Process Feed 
 
-function extractCDATA(content: string, tag: string): string {
-  const regex = new RegExp(
-    `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
-    "i"
-  );
-  const match = content.match(regex);
-  return match ? match[1].trim() : "";
-}
-
-function extractLink(item: string, feedUrl: string): string {
-	
-  // 1. standard <link>value</link>
-  let link = extractCDATA(item, "link");
-  if (link) return link;
-
-  // 2. <guid> fallback
-  link = extractCDATA(item, "guid");
-  if (link && link.startsWith("http")) return link;
-
-  // 3. <atom:link href="...">
-  const atomMatch = item.match(/<atom:link[^>]+href="([^"]+)"/i);
-  if (atomMatch) return atomMatch[1];
-
-  // 4. fallback به homepage سایت
-  return feedUrl;
-}
-
-
-function extractTag(item: string, tag: string): string {
-    const regex = new RegExp(
-        `<${tag}[^>]*>(?:<!\\[CDATA\\[)?([\\s\\S]*?)(?:\\]\\]>)?<\\/${tag}>`,
-        "i"
-    );
-    const match = item.match(regex);
-    return match ? match[1].trim() : "";
-}
-
-function escapeHtml(text: string): string {
-    return text
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
-}
-
-function cleanText(input: string): string {
-    if (!input) return "";
-
-    let text = input;
-
-    // استخراج CDATA
-    text = text.replace(/<!\[CDATA\[([\s\S]*?)\]\]>/gi, "$1");
-
-    // decode entity ها
-    text = text
-        .replace(/&apos;/g, "'")
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, "&")
-        .replace(/&lt;/g, "<")
-        .replace(/&gt;/g, ">")
-        .replace(/&#39;/g, "'");
-
-    // حذف همه تگ‌های HTML (از جمله <a>)
-    text = text.replace(/<[^>]+>/g, "");
-
-    // فشرده سازی فاصله
-    text = text.replace(/\s+/g, " ").trim();
-
-    return text;
-}
-
 async function processFeed(feed: any, env: any) {
     try {
         const response = await fetch(feed.url, { headers: { "User-Agent": "Mozilla/5.0" } });
@@ -199,32 +129,7 @@ async function processFeed(feed: any, env: any) {
 
         for (const item of items.slice(0, 2)) {
 
-            // لینک با fallback کامل
-            const link = extractCDATA(item, "guid") || feed.url;
-            if (!link) continue;
-
-            // محتوای اصلی و خلاصه
-            const rawContent = extractTag(item, "content:encoded") || extractTag(item, "description") || "";
-			
-            const summary = cleanText(rawContent).slice(0, 600);
-			
-            // عنوان
-            const rawTitle = extractTag(item, "title");
-            if (!rawTitle) continue;
-			
-            const title = cleanText(rawTitle);
-
-            // بررسی ارسال قبلی
-            //if (await alreadySent(env, title)) continue;
-
-            // ترجمه عنوان
-            const translatedTitle = title//await translateToFa(title);
-
-		  const message =
-			`📰 <b>${title}</b>\n\n` +
-			(summary ? `${summary}\n\n` : "") +
-			`🔗 <a href="${link}">Read full article</a>\n\n` +
-			`Source: ${feed.name}`;
+		    const message = item
 
             await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
                 method: "POST",

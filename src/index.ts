@@ -146,15 +146,19 @@ async function processFeed(feed: any, env: any) {
 				? await translateToFa(summary)
 				: "";
 	
-			const message =
-			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n` +
-			  `<i>${escapeHtml(title)}</i>\n\n` +
-			  (translatedSummary
-				? `${escapeHtml(translatedSummary)}\n\n`
-				: "") +
-			  `🔗 🌍  <a href="${link}">escapeHtml(title)</a>\n\n` +
-			  `Source: ${feed.name}`;
+			/*const message =
+				`📰 <b>${title}</b>\n\n` +
+				(summary ? `${summary}\n\n` : "") +
+				`🔗 <a href="${link}">Read full article</a>\n\n` +
+				`Source: ${feed.name}`;*/
 		
+			const message =
+			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n` + // تیتر ترجمه شده و یک خط فاصله
+			  (translatedSummary ? `${escapeHtml(translatedSummary)}\n\n` : "") + // متن ترجمه شده با دو خط فاصله
+			`🌍 <i>${escapeHtml(title)}</i>\n` + // تیتر منبع با یک خط فاصله
+			  `🔗 <a href="${link}">Read full article</a>\n\n` + // رفرنس
+			  `Source: ${feed.name}`;
+					
 
 			await fetch(`https://api.telegram.org/bot${env.BOT_TOKEN}/sendMessage`, {
 				method: "POST",

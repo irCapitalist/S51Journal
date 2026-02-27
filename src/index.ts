@@ -1,15 +1,5 @@
 // src/index.ts
 
-/*const RSS_FEEDS = [
-	{ name: "Guardian", url: "https://www.theguardian.com/world/rss" },
-	{ name: "NYT", url: "https://rss.nytimes.com/services/xml/rss/nyt/HomePage.xml" },
-	{ name: "CNN", url: "http://rss.cnn.com/rss/edition.rss" },
-	{ name: "BBC", url: "http://feeds.bbci.co.uk/news/rss.xml" },
-	{ name: "Bloomberg", url: "https://feeds.bloomberg.com/markets/news.rss" },
-	{ name: "WSJ", url: "https://feeds.a.dj.com/rss/RSSWorldNews.xml" },
-	{ name: "Fox", url: "https://moxie.foxnews.com/google-publisher/latest.xml" },
-	{ name: "DailyMail", url: "https://www.dailymail.co.uk/articles.rss" }
-];*/
 const RSS_FEEDS = [
   {
     name: "Guardian",
@@ -203,16 +193,10 @@ async function processFeed(feed: any, env: any) {
 				? await translateToFa(summary)
 				: "";
 	
-			/*const message =
-				`📰 <b>${title}</b>\n\n` +
-				(summary ? `${summary}\n\n` : "") +
-				`🔗 <a href="${link}">Read full article</a>\n\n` +
-				`Source: ${feed.name}`;*/
-		
 			const message =
 			  `📰 <b>${escapeHtml(translatedTitle)}</b>\n\n` +
 
-			  (translatedSummary
+			  (summary
 				? `${escapeHtml(summary)}\n\n`
 				: "") +
 

@@ -1,11 +1,13 @@
 ﻿# S51Journal
 
 __
+
 Important warning! Because Telegram is filtered, it was not possible to test your system locally with tools such as wrangler-cli, and constantly using a VPN and changing your IP makes Cloudflare suspect you as a bot.
 
 Therefore, the only way to test and debug is to deploy each time with a push. As a result, many commits have technical issues. Also, the latest version is always being tested and updated; to avoid having too many branches, no separate branch is created for deploying the stable version, so make sure to use the code and verify that there are no bugs.
 
 Also, use commits that are labeled "Clean code".
+
 __
 
 RSS to Telegram Topic Bot (Cloudflare Workers)
